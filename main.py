@@ -15,17 +15,24 @@ def on_selection(event):
     """Store the selected camera when a row is clicked."""
     global selected_camera
     selected_camera = event.args['data']['name']  # Get selected camera name
+    
+    
 
 def show_reservation_dialog():
     """show dialouge for user selection"""
-with ui.dialog() as dialog, ui.card():
-    ui.label(f'Reserving {selected_camera}')
-    start_date = ui.input('Start Date (DD-MM-YY)')
-    end_date = ui.input('End Date (DD-MM-YYYY)')
+    if not selected_camera:
+        ui.notify('please select camera first', type='warning')
+        return
+    
 
-    def confirm():
-        reserve_camera(start_date.value, end_date.value,)
-        dialog.close()
+    with ui.dialog() as dialog, ui.card():
+        ui.label(f'Reserving {selected_camera}')
+        start_date = ui.input('Start Date (DD-MM-YY)')
+        end_date = ui.input('End Date (DD-MM-YYYY)')
+
+        def confirm():
+            reserve_camera(start_date.value, end_date.value,)
+            dialog.close()
         
         ui.button('Confirm', on_click=confirm)
         ui.button('Cancel', on_click=dialog.close)
@@ -34,7 +41,7 @@ with ui.dialog() as dialog, ui.card():
 
 
     
-def reserve_camera():
+def reserve_camera(start_date, end_date):
     """Update the selected camera's reservation status."""
     global selected_camera
     if selected_camera and start_date and end_date:
@@ -43,8 +50,8 @@ def reserve_camera():
                 camera['reserved'] = f'Reserved from {start_date} to {end_date}'
                 break
         grid.update()  # Refresh the table
-    else: 
-        ui.notify('Please enter valid dates', type='warning')
+    else:
+        ui.notify('Please enter valid dates.', type='warning')
     
 
 
