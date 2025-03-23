@@ -9,50 +9,52 @@ camera_data = [
 ]
 
 selected_camera = None  # Store the selected camera
-
+print("camera data", camera_data)
 
 def on_selection(event):
     """Store the selected camera when a row is clicked."""
     global selected_camera
     selected_camera = event.args['data']['name']  # Get selected camera name
-    
-    
+    print("on selection", selected_camera)
+
 
 def show_reservation_dialog():
-    """show dialouge for user selection"""
+    """show dialouge for user selection"""  
+    global selected_camera
+
+    print("show", selected_camera)
     if not selected_camera:
         ui.notify('please select camera first', type='warning')
         return
-    
 
     with ui.dialog() as dialog, ui.card():
         ui.label(f'Reserving {selected_camera}')
-        start_date = ui.input('Start Date (DD-MM-YY)')
+        start_date = ui.input('Start Date (DD-MM-YY)') 
         end_date = ui.input('End Date (DD-MM-YYYY)')
 
         def confirm():
             reserve_camera(start_date.value, end_date.value,)
             dialog.close()
-        
+
         ui.button('Confirm', on_click=confirm)
         ui.button('Cancel', on_click=dialog.close)
-        
+
     dialog.open()
 
 
-    
 def reserve_camera(start_date, end_date):
     """Update the selected camera's reservation status."""
     global selected_camera
+    print("reserve", selected_camera)
     if selected_camera and start_date and end_date:
         for camera in camera_data:
+            print("camera name", camera['name'])
             if camera['name'] == selected_camera:
                 camera['reserved'] = f'Reserved from {start_date} to {end_date}'
                 break
         grid.update()  # Refresh the table
     else:
         ui.notify('Please enter valid dates.', type='warning')
-    
 
 
 # Create the grid with row selection enabled
