@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 from nicegui import ui
+import re
 
-class CameraReservationApp:
+def is_valid_date(date):
+    """Validate date format DD-MM-YYYY using regex."""
+    return re.match(r'^\d{2}-\d{2}-\d{4}$', date) is not None
+
+    
+class Reservation:
     def __init__(self):
         # Initial camera data
         self.camera_data = [
@@ -31,6 +37,8 @@ class CameraReservationApp:
         """Store the selected camera when a row is clicked."""
         self.selected_camera = event.args['data']['name']  # Get selected camera name
         print("on selection", self.selected_camera)
+        
+  
 
     def show_reservation_dialog(self):
         """Show dialogue for user selection"""
@@ -38,13 +46,18 @@ class CameraReservationApp:
         if not self.selected_camera:
             ui.notify('Please select a camera first', type='warning')
             return
-
+        
         with ui.dialog() as dialog, ui.card():
             ui.label(f'Reserving {self.selected_camera}')
             start_date = ui.input('Start Date (DD-MM-YY)')
             end_date = ui.input('End Date (DD-MM-YYYY)')
+        
 
             def confirm():
+                if not is_valid_date(start_date.value) or not is_valid_date(end_date.value):
+                    ui.notify('Invalid date Format Please use DD-MM-YYYY.', type='warning')
+                    return
+
                 self.reserve_camera(start_date.value, end_date.value)
                 dialog.close()
 
@@ -66,7 +79,7 @@ class CameraReservationApp:
         else:
             ui.notify('Please enter valid dates.', type='warning')
 
-# Create an instance of the CameraReservationApp
-app = CameraReservationApp()
+# Create an instance of the Reservation
+app = Reservation()
 
 ui.run()
