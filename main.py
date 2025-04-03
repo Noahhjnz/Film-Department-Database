@@ -4,6 +4,7 @@ from nicegui import ui
 import pandas as pd
 import re
 
+# Complex Technique - Reading From Seperate File
 CSV_FILE = 'camera_data.csv'  # Path to CSV file
 
 def is_valid_date(date):
