@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
+# Complex Technique - Third Party / Non Core Libary
 from nicegui import ui
+import pandas as pd
 import re
+
+CSV_FILE = 'camera_data.csv'  # Path to CSV file
 
 def is_valid_date(date):
     """Validate date format DD-MM-YYYY using regex."""
     return re.match(r'^\d{2}-\d{2}-\d{4}$', date) is not None
 
-    
+# Complex Technique - Object Oriented Programming Using Classes    
+# Complex Technique - Programming For A GUI  
 class Reservation:
     def __init__(self):
-        # Initial camera data
-        self.camera_data = [
-            {'name': 'Camera 1', 'reserved': 'Available'},
-            {'name': 'Camera 2', 'reserved': 'Available'},
-            {'name': 'Camera 3', 'reserved': 'Available'},
-        ]
-        self.selected_camera = None  # Store the selected camera
+        self.camera_data = self.load_camera_data()
+        self.selected_camera = None
 
         # Create the grid with row selection enabled
         self.grid = ui.aggrid({
@@ -29,15 +29,23 @@ class Reservation:
         }).classes('max-h-40')
 
         self.grid.on('rowSelected', self.on_selection)  # Listen for row selection
-
         # Reserve button
         ui.button('Reserve', on_click=self.show_reservation_dialog)
+        
+    def load_camera_data(self):
+        """Load camera data from CSV file."""
+        try:
+            df = pd.read_csv(CSV_FILE)
+            return df.to_dict(orient='records')
+        except FileNotFoundError:
+            ui.notify(f'Error: {CSV_FILE} not found.', type='error')
+            return []
 
     def on_selection(self, event):
-        """Store the selected camera when a row is clicked."""
-        self.selected_camera = event.args['data']['name']  # Get selected camera name
+        self.selected_camera = event.args['data']['name']
+        self.grid.update()  # Refresh the table
         print("on selection", self.selected_camera)
-        
+
   
 
     def show_reservation_dialog(self):
@@ -75,9 +83,11 @@ class Reservation:
                 if camera['name'] == self.selected_camera:
                     camera['reserved'] = f'Reserved from {start_date} to {end_date}'
                     break
-            self.grid.update()  # Refresh the table
+                self.grid.update()
+            self.save_camera_data()  # Refresh the table
         else:
             ui.notify('Please enter valid dates.', type='warning')
+
 
 # Create an instance of the Reservation
 app = Reservation()
