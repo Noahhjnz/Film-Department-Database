@@ -14,6 +14,9 @@ def is_valid_date(date):
     """Validate date format DD-MM-YYYY using regex."""
     return re.match(r'^\d{2}-\d{2}-\d{4}$', date) is not None
 
+
+
+
 # Complex Technique - Object Oriented Programming Using Classes
 # Complex Technique - Programming For A GUI
 
@@ -25,15 +28,19 @@ class Reservation:
         self.selected_device = None
 
         self.grid = ui.aggrid({
-            'defaultColDef': {'flex': 1},
+            'defaultColDef': {
+                'flex': 1,
+                'tooltipShowDelay': 0,  # Instant show
+                'tooltipHideDelay': 200,  # Optional: small delay to hide
+            },
             'columnDefs': [
-                {'headerName': 'Name', 'field': 'name'},
-                {'headerName': 'Reserved', 'field': 'reserved'},
+                {'headerName': 'Name', 'field': 'name', 'tooltipField': 'tooltip'},
+                {'headerName': 'Reserved', 'field': 'reserved', 'tooltipField': 'tooltip'},
                 {'field': 'is_divider', 'hide': True}
             ],
             'rowData': self.device_data,
-            'rowSelection': 'single',  # Allow single row selection
-        }).classes('max-h-60')
+            'rowSelection': 'single',
+    }).classes('max-h-60')
 
         self.grid.on('rowSelected', self.on_selection)
         ui.button('Reserve', on_click=self.show_reservation_dialog)
@@ -44,25 +51,52 @@ class Reservation:
             df = pd.read_csv(CSV_FILE)
             records = df.to_dict(orient='records')
             for record in records:
-                record['is_divider'] = False  # <-- ensure consistent field
+                record['is_divider'] = False
+                # Check if it's a camera (has resolution data)
+                if pd.notna(record['resolution']):
+                    record['tooltip'] = (
+                        f"Resolution: {record['resolution']}\n"
+                        f"Megapixels: {record['megapixels']}\n"
+                        f"Lens Options: {record['lens_options']}"
+                    )
+                else:
+                    # For non-camera devices, just show basic info
+                    record['tooltip'] = f"Device: {record['name']}\nStatus: {record['reserved'] or 'Available'}"
             return records
         except FileNotFoundError:
             ui.notify(f'Error: {CSV_FILE} not found.', type='error')
-            return []
-
+        return []
     def add_category_divider(self):
-        """Add a divider row between cameras and microphones."""
+        """Add divider rows between cameras, microphones, and headphones."""
+        # Find the first microphone
         mic_index = next((i for i, item in enumerate(self.device_data)
-                          # checks to find the first microphone
-                          if 'microphone' in item['name'].lower()), len(self.device_data))
-
+                        if 'microphone' in item['name'].lower()), len(self.device_data))
+        
+        # Find the first headphone (after microphones)
+        headphone_index = next((i for i, item in enumerate(self.device_data)
+                            if 'headphone' in item['name'].lower()), len(self.device_data))
+        
+        # Insert microphone divider if microphones exist
         if mic_index < len(self.device_data):
-            self.device_data.insert(mic_index, {  # inserts new row in the correct place (above first microphone)
+            self.device_data.insert(mic_index, {
                 'name': 'MICROPHONES',
                 'reserved': '',
                 'is_divider': True
             })
-
+            
+            # Adjust headphone index if we inserted a microphone divider
+            if headphone_index > mic_index:
+                headphone_index += 1
+        
+        # Insert headphone divider if headphones exist
+        if headphone_index < len(self.device_data):
+            self.device_data.insert(headphone_index, {
+                'name': 'HEADPHONES',
+                'reserved': '',
+                'is_divider': True
+            })
+            
+            
     def on_selection(self, event):
         row = event.args['data']
         if row.get('is_divider'):

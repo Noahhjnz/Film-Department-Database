@@ -1,7 +1,10 @@
-name,reserved
-Camera 1,Available
-Camera 2,Available
-Camera 3,Available
-Microphone One,Available
-Microphone Two,Available
-Microphone Three,Available
+name,reserved,resolution,megapixels,lens_options
+Black Magic,Available,1920x1080,12MP,"Wide, Telephoto"
+Cannon C70,Available,3840x2160,24MP,"Wide, Ultra-Wide"
+Cannon DSLR,Available,1280x720,8MP,"Standard"
+Microphone One,Available,,,
+Microphone Two,Available,,,
+Microphone Three,Available,,,
+Headphones One,Available,,,
+Headphones Two,Available,,,
+Headphones Three,Available,,,
