@@ -1,93 +1,128 @@
 #!/usr/bin/env python3
+# Complex Technique - Third Party / Non Core Libary
+from datetime import datetime, timedelta
 from nicegui import ui
 import pandas as pd
 import re
+from datetime import date, datetime, timedelta
 
-CSV_FILE = 'camera_data.csv'
+# Complex Technique - Reading From Seperate File
+CSV_FILE = 'device_data.csv'  # Path to CSV file
+
 
 def is_valid_date(date):
-    return re.match(r'^\d{2}-\d{2}-\d{4}$', date) is not None  # true or false
+    """Validate date format DD-MM-YYYY using regex."""
+    return re.match(r'^\d{2}-\d{2}-\d{4}$', date) is not None
+
+# Complex Technique - Object Oriented Programming Using Classes
+# Complex Technique - Programming For A GUI
+
 
 class Reservation:
-    
-    
-    
-    def __init__(self,event):
-        self.camera_data = self.load_camera_data()
-        self.selected_camera = None
-        self.dialog = None
-        self.start_date_input = None
-        self.end_date_input = None
+    def __init__(self):
+        self.device_data = self.load_device_data()
+        self.add_category_divider()
+        self.selected_device = None
 
         self.grid = ui.aggrid({
             'defaultColDef': {'flex': 1},
             'columnDefs': [
                 {'headerName': 'Name', 'field': 'name'},
                 {'headerName': 'Reserved', 'field': 'reserved'},
+                {'field': 'is_divider', 'hide': True}
             ],
-            'rowData': self.camera_data,
-            'rowSelection': 'single',
-        }).classes('max-h-40')
+            'rowData': self.device_data,
+            'rowSelection': 'single',  # Allow single row selection
+        }).classes('max-h-60')
 
         self.grid.on('rowSelected', self.on_selection)
-        ui.button('Reserve', on_click=lambda: self.show_reservation_dialog(event))
+        ui.button('Reserve', on_click=self.show_reservation_dialog)
 
-    def load_camera_data(self):
+    def load_device_data(self):
+        """Load all device data from the CSV file."""
         try:
             df = pd.read_csv(CSV_FILE)
-            print(df.to_dict(orient='records'))
-            return df.to_dict(orient='records')
+            records = df.to_dict(orient='records')
+            for record in records:
+                record['is_divider'] = False  # <-- ensure consistent field
+            return records
         except FileNotFoundError:
             ui.notify(f'Error: {CSV_FILE} not found.', type='error')
             return []
 
+    def add_category_divider(self):
+        """Add a divider row between cameras and microphones."""
+        mic_index = next((i for i, item in enumerate(self.device_data)
+                          # checks to find the first microphone
+                          if 'microphone' in item['name'].lower()), len(self.device_data))
+
+        if mic_index < len(self.device_data):
+            self.device_data.insert(mic_index, {  # inserts new row in the correct place (above first microphone)
+                'name': 'MICROPHONES',
+                'reserved': '',
+                'is_divider': True
+            })
+
     def on_selection(self, event):
-        print(event.args['data']['name'])
-        self.selected_camera = event.args['data']['name']
-        print("Selected:", self.selected_camera)
+        row = event.args['data']
+        if row.get('is_divider'):
+            self.selected_device = None
+            return  # prevents user from selecting divider
+        self.selected_device = row
+        print("Selected device:", self.selected_device)
 
-    def show_reservation_dialog(self, event):
-        if not self.selected_camera:
-            ui.notify('Please select a camera first', type='warning')
+
+
+    def show_reservation_dialog(self):
+        if not self.selected_device:
+            ui.notify('Please select a device first', type='warning')
             return
 
-        self.dialog = ui.dialog()
-        with self.dialog, ui.card():
-            ui.label(f'Reserving {self.selected_camera}')
-            self.start_date_input = ui.input('Start Date (DD-MM-YYYY)')
-            self.end_date_input = ui.input('End Date (DD-MM-YYYY)')
+        with ui.dialog() as dialog, ui.card():
+            ui.label(f"Reserving {self.selected_device['name']}")
 
-            ui.button('Confirm', on_click=lambda:self.confirm_reservation(event))
-            ui.button('Cancel', on_click=self.dialog.close)
+            start_date = ui.input('Start Date (DD-MM-YYYY)', value=date.today().strftime('%d-%m-%Y'))
+            duration = ui.input('Number of days to reserve (1-7)')
 
-        self.dialog.open()
+            def confirm():
+                if not is_valid_date(start_date.value):
+                    ui.notify('Invalid date format. Use DD-MM-YYYY.', type='warning')
+                    return
 
-    def confirm_reservation(self, event):
-        start_date = self.start_date_input.value
-        end_date = self.end_date_input.value
+                try:
+                    days = int(duration.value)
+                    if days < 1 or days > 7:
+                        ui.notify('Reservation duration must be between 1 and 7 days.', type='warning')
+                        return
 
-        if not is_valid_date(start_date) or not is_valid_date(end_date):
-            ui.notify('Invalid date format. Please use DD-MM-YYYY.', type='warning')
-            return
+                    start = datetime.strptime(start_date.value, '%d-%m-%Y')
+                    end = start + timedelta(days=days)
+                    end_date = end.strftime('%d-%m-%Y')
+                    self.reserve_device(start_date.value, end_date)
+                    dialog.close()
+                except ValueError:
+                    ui.notify('Please enter a whole number for the duration.', type='warning')
 
-        self.reserve_camera( event, start_date, end_date)
-        self.dialog.close()
+            with ui.row().classes('justify-end'):
+                ui.button('Confirm', on_click=confirm)
+                ui.button('Cancel', on_click=dialog.close)
 
-    def reserve_camera(self, event, start_date, end_date):
-        print(f"reserve {self.selected_camera}")
-        print(f"reserve {event.args['data']['name']}")
-        if self.selected_camera == event.args['data']['name']:
-            for index, camera in enumerate(self.camera_data):
-                if camera['name'] == self.selected_camera:
-                    camera['reserved'] = f'Reserved from {start_date} to {end_date}'
-                    self.camera_data[index] = camera  # Update the data in the list
+        dialog.open()
+
+
+    def reserve_device(self, start_date, end_date):
+        """Reserve the selected device."""
+        if self.selected_device and start_date and end_date:
+            for device in self.device_data:
+                if device['name'] == self.selected_device['name']:
+                    device['reserved'] = f'Reserved from {start_date} to {end_date}'
                     break
-
-            # Update the entire grid
-            self.grid.options['data'] self.camera_data
+            self.grid.options['rowData'] = self.device_data
             self.grid.update()
         else:
-            ui.notify('No camera selected.', type='warning')
+            ui.notify('Please enter valid dates.', type='warning')
 
+
+# Start the app
 app = Reservation()
 ui.run()
