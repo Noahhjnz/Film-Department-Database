@@ -74,7 +74,7 @@ class Reservation:
         headphone_index = next((i for i, item in enumerate(self.device_data)
                                 if 'headphone' in item['name'].lower()), len(self.device_data))
 
-        # Insert microphone divider if microphones exist
+        # Insert microphone divider 
         if mic_index < len(self.device_data):
             self.device_data.insert(mic_index, {
                 'name': 'MICROPHONES',
@@ -82,7 +82,7 @@ class Reservation:
                 'is_divider': True
             })
 
-            # Adjust headphone index if we inserted a microphone divider
+            # Adjust headphone index 
             if headphone_index > mic_index:
                 headphone_index += 1
 
@@ -114,7 +114,7 @@ class Reservation:
                                   value=date.today().strftime('%d-%m-%Y'))  # grabs current date
             duration = ui.input('Number of days to reserve (1-7)')
 
-            def confirm():  # no longer used since start date is automatically inputted
+            def confirm():  
                 if not is_valid_date(start_date.value):
                     ui.notify('Invalid date format. Use DD-MM-YYYY.',
                               type='warning')
